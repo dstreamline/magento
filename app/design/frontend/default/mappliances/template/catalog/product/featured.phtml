@@ -1,0 +1,107 @@
+<?php
+//{{block type="core/template" show_total="4" name="product_featured" as="product_featured" template="catalog/product/featured.phtml}}
+
+
+
+$totalPerPage = ($this->show_total) ? $this->show_total : 5;
+$visibility = array(
+                      Mage_Catalog_Model_Product_Visibility::VISIBILITY_BOTH,
+                      Mage_Catalog_Model_Product_Visibility::VISIBILITY_IN_CATALOG
+                  );
+
+$storeId = Mage::app()->getStore()->getId();
+
+$_productCollection = Mage::getResourceModel('reports/product_collection')
+						->addAttributeToSelect('*')     
+					    ->setStoreId($storeId)
+                        ->addStoreFilter($storeId)	
+					    ->addAttributeToFilter('visibility', $visibility)
+						->addAttributeToFilter('featured', true)
+						->setOrder('created_at', 'desc')
+						->addAttributeToSelect('status') 
+						->setPageSize($totalPerPage);
+Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($_productCollection);
+Mage::getSingleton('cataloginventory/stock')->addInStockFilterToCollection($_productCollection);
+Mage::getSingleton('catalog/product_visibility')->addVisibleInSearchFilterToCollection($_productCollection);
+
+
+// // if product is part of configurable product get first parent product
+// $junkProducts = new Varien_Data_Collection();
+// foreach ($_productCollection as $k => $p) {
+	// $p = $p->loadParentProductIds();
+	// $parentIds = $p->getData('parent_product_ids');	
+	// if (is_array($parentIds) && !empty($parentIds)) {
+		// if (!$junkProducts->getItemById($parentIds[0])) {
+			// $parentProduct = Mage::getModel('catalog/product')->setStoreId($storeId)->load($parentIds[0]);
+			// if ($parentProduct->isVisibleInCatalog()) {
+				// $junkProducts->addItem($parentProduct);
+			// }
+		// }
+	// } else {
+		// if (!$junkProducts->getItemById($k)) {
+			// $junkProducts->addItem($p);
+		// }
+	// }		
+// }
+// $_productCollection = $junkProducts;
+// //end if product is part of configurable product get first parent product
+?>
+<div class="feadtured-head">
+<h2 style="display:none"><?php echo $this->__('Featured Products')?></h2>
+</div>
+<div class="feadtured-product">
+<?php $_collectionSize = $_productCollection->count() ?>
+    
+    <?php $_columnCount = $this->getColumnCount(); if (!$_columnCount) $_columnCount = 3;?>
+	
+      <?php $i=0; foreach ($_productCollection as $_product): ?>
+        <?php if($i++%$_columnCount==0): ?>
+        <ol class="grid-row">
+        <?php endif; ?>
+            <li class="item <?php if($i%$_columnCount==1):?> first <?php endif;?><?php if($i%$_columnCount==0):?> last<?php endif; ?>">
+				<p class="product-image">
+                    <a href="<?php echo $_product->getProductUrl() ?>" title="<?php echo $this->htmlEscape($this->getImageLabel($_product, 'small_image')) ?>">
+                        <img src="<?php echo $this->helper('catalog/image')->init($_product, 'small_image')->resize(274, 355); ?>" width="274" height="355" alt="<?php echo $this->htmlEscape($this->getImageLabel($_product, 'small_image')) ?>" title="<?php echo $this->htmlEscape($this->getImageLabel($_product, 'small_image')) ?>" />
+                    </a>
+                </p>
+				<div class="product-description">
+					<h5><a href="<?php echo $_product->getProductUrl() ?>" title="<?php echo $this->htmlEscape($_product->getName()) ?>"><?php echo $this->htmlEscape($_product->getName()) ?></a></h5>
+					
+					<?php 	$catids = $_product->getCategoryIds();
+								$cats = Mage::getModel('catalog/category')->getCollection()
+											->addAttributeToFilter('entity_id',array('in'=>$catids))
+											->setOrder('level','desc')
+											;
+								$i =0; foreach($cats as $cat)
+								{
+									$i++;
+									$_cat = Mage::getModel('catalog/category')->load($cat->getId());
+					?>
+					<h2 class="category-home"><a href="<?php $_cat->getUrl(); ?>"><?php echo $_cat->getName() ?></a></h2>
+					<?php }
+						if($i>1): break; endif;
+					?>	
+					
+					<?php if ($_product->getSpecialPrice()>0):?>
+							<div class="price-box">
+								<p class="old-price">
+				
+									<span  class="price"> <?php echo $this->helper('checkout')->formatPrice($_product->getPrice()) ?></span>
+								</p>
+								<p class="special-price">
+									<span class="price"><?php echo $this->helper('checkout')->formatPrice($_product->getSpecialPrice()) ?> </span>
+								</p>
+							</div>
+						<?php else: ?>
+							<div class="price-box"><span class="regular-price"><span class="price"><?php echo $this->helper('checkout')->formatPrice($_product->getPrice()) ?></span></span></div>
+						<?php endif; ?>
+				</div>
+            </li>
+        <?php if($i%$_columnCount==0 || $i==$_collectionSize): ?>
+		</ol>
+        <?php endif; ?>
+		<?php if($i>=1):?></ol><?php break; endif;?>
+    <?php endforeach ?>
+</div>
+
+

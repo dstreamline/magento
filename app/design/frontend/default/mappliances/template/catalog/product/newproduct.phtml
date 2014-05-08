@@ -1,0 +1,71 @@
+<?php
+
+/*
+	{{block type="core/template" show_total="12"  template="catalog/product/newproduct.phtml"}}
+*/
+$totalPerPage = ($this->show_total) ? $this->show_total : 6;
+$counter = 4;
+$visibility = array(
+                      Mage_Catalog_Model_Product_Visibility::VISIBILITY_BOTH,
+                      Mage_Catalog_Model_Product_Visibility::VISIBILITY_IN_CATALOG
+                  );
+
+$storeId = Mage::app()->getStore()->getId();
+$_productCollection = Mage::getResourceModel('reports/product_collection')
+                              ->addAttributeToSelect('*')                              
+                              ->addAttributeToFilter('visibility', $visibility)
+                              ->setOrder('created_at', 'desc')
+							  ->setPageSize($totalPerPage);
+
+//Mage::getSingleton('catalog/product_status')->addVisibleFilterToCollection($_productCollection);
+//Mage::getSingleton('cataloginventory/stock')->addInStockFilterToCollection($_productCollection);
+
+
+?>
+
+	<div class="newproduct-title">
+		<h2>What's New?</h2>
+	</div>
+	<div class="newproduct-content">
+	<?php $_collectionSize = count($_productCollection) ?>
+	<?php $_columnCount = 3; ?>
+	<?php $i=0; foreach ($_productCollection as $_product): ?>
+		<?php if($i++%$_columnCount==0): ?>
+			<ol class="grid-row">
+		<?php endif; ?>
+			<li class="item <?php if($i%3==1):?> first <?php elseif($i%3==0):?>last<?php endif;?>">
+				<div class="new-product-item">
+					<a class="product-image" href="<?php echo $_product->getProductUrl() ?>"><img src="<?php echo $this->helper('catalog/image')->init($_product, 'small_image')->resize(281, 185); ?>"  width="281" height="185" alt="<?php echo $this->htmlEscape($_product->getName()) ?>"/></a>
+					<h5><a href="<?php echo $_product->getProductUrl() ?>"><?php echo $this->htmlEscape($_product->getName()) ?></a></h5>
+					<div class="short-description">
+						<?php echo $_product->getShortDescription();?>
+					</div>
+					<?php if ($_product->getSpecialPrice()>0):?>
+							<div class="box_price">
+								<p class="special-price">
+									<span class="price"><?php echo $this->helper('checkout')->formatPrice($_product->getSpecialPrice()) ?> </span>
+								</p>
+								<p class="old-price">
+									<span  class="price"> <?php echo $this->helper('checkout')->formatPrice($_product->getPrice()) ?></span>
+								</p>
+								<div class="clear_both"><span></span></div>
+							</div>
+						<?php else: ?>
+							<div class="box_price"><span class="price"><?php echo $this->helper('checkout')->formatPrice($_product->getPrice()) ?></span></div>
+						<?php endif; ?>
+						
+					<!--<div class="box_price">	
+						<?php //echo $this->helper('checkout')->formatPrice($_product->getPrice()) ?>
+					</div>-->
+					<button type="button" class="button btn-cart"  onclick="setLocation('<?php echo  Mage::helper('checkout/cart')->getAddUrl($_product);?>')"><span><span><?php echo $this->__('Add to Cart') ?></span></span></button>
+					<div class="clear_both"><span></span></div>
+				</div>
+			</li>
+			<?php if($i%$_columnCount==0 || $i==$_collectionSize): ?>
+			</ol>
+			<?php endif; ?>
+			<?php if($i>=3):break; endif;?>
+		<?php endforeach ?>
+		<script type="text/javascript">decorateGeneric($$('.grid-row'), ['last', 'odd', 'even']);</script> 
+	</div>
+
